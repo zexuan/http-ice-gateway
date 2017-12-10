@@ -38,8 +38,6 @@ protected:
 };
 }
 
-#ifdef TIMER_TEST
-
 #define TIMER(tv) \
     std::chrono::steady_clock::time_point tv = std::chrono::steady_clock::now();
 
@@ -60,14 +58,6 @@ protected:
             TIMER(__timer_end);                                                             \
             elapse = ((__timer_end.tv_sec*1000000L+__timer_end.tv_usec)-(tv.tv_sec*1000000L+tv.tv_usec))/1000.0; \
         } while(0);
-
-#else
-
-#define TIMER(tv)               \
-
-#define TIMER_END(tv, elapse)   \
-    double elapse = 0;
-#endif
 
 #define TIME_SINCE_EPOCH(tv) \
     int64_t tv =  std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();

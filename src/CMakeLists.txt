@@ -26,6 +26,7 @@ link_directories(
 
 set(SERVER_SRC
     main.cpp
+    conf.cpp
     http_handler.cpp
     ice_rqst.cpp
     ice_services.cpp

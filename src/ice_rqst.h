@@ -14,23 +14,23 @@ NAMESPACE_GATEWAY_BEGIN
 
 namespace rqst {
 
-class IceAsyncRqstBase : public IceUtil::Shared {
+class IceRqstBase : public IceUtil::Shared {
 public:
-    IceAsyncRqstBase(const std::string& rqstid, bool async=true);
-    IceAsyncRqstBase(const std::string& rqstid, const AMD_Srv_CallPtr& cb, bool async=true);
-    IceAsyncRqstBase(const std::string& rqstid, const std::string& srv_id, const std::string& method, const std::string& rqst, bool async=true);
-    IceAsyncRqstBase(const std::string& rqstid, const std::string& srv_id, const std::string& method, const std::string& rqst, const AMD_Srv_CallPtr& cb, bool async=true);
-    virtual ~IceAsyncRqstBase();
+    IceRqstBase(const std::string& rqstid, bool async=true);
+    IceRqstBase(const std::string& rqstid, const AMD_Srv_CallPtr& cb, bool async=true);
+    //IceRqstBase(const std::string& rqstid, const std::string& srv_id, const std::string& method, const std::string& rqst, bool async=true);
+    //IceRqstBase(const std::string& rqstid, const std::string& srv_id, const std::string& method, const std::string& rqst, const AMD_Srv_CallPtr& cb, bool async=true);
+    virtual ~IceRqstBase();
 
     const std::string& RqstId() { return rqstid_; }
-    const std::string& SrvId() { return srv_id_; }
-    const std::string& Method() { return method_; }
-    const std::string& Rqst() { return rqst_; }
+    //const std::string& SrvId() { return srv_id_; }
+    //const std::string& Method() { return method_; }
+    //const std::string& Rqst() { return rqst_; }
 
     const std::string& Error() { return err_; }
     void Error(const std::string& err) { err_ = err; }
 
-    bool Start();
+    //bool Start();
     bool Start(const std::string& srv_id, const std::string& method, const std::string& rqst);
 
     bool IceResponse(bool succ, const std::string& resp);
@@ -43,12 +43,10 @@ public:
     void response(bool succ, const std::string& resp);
     void exception(const Ice::Exception& ex);
 
-    //bool asyncPing(const std::string& srv_id, const std::string& rqst);
-
 protected:
-    bool asyncCall();
+    //bool asyncCall();
     bool asyncCall(const std::string& rqstid, const std::string& srv_id, const std::string& method, const std::string& rqst);
-    bool syncCall();
+    //bool syncCall();
     bool syncCall(const std::string& rqstid, const std::string& srv_id, const std::string& method, const std::string& rqst);
 
 
@@ -56,13 +54,13 @@ protected:
     bool is_async_{true};
 
     std::string rqstid_;
-    std::string srv_id_;
-    std::string method_;
-    std::string rqst_;
+    //std::string srv_id_;
+    //std::string method_;
+    //std::string rqst_;
     std::string err_;
     AMD_Srv_CallPtr callback_;
 };
-typedef IceUtil::Handle<IceAsyncRqstBase> IceAsyncCallbackHandlerPtr;
+typedef IceUtil::Handle<IceRqstBase> IceAsyncCallbackHandlerPtr;
 
 }
 

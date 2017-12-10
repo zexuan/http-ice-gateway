@@ -41,7 +41,6 @@ int IceServices::createChannel(const struct ice_config_service_t& srv_conf, std:
         return res;
     }
     channels_[srv_conf.srv_id] = srv;
-    std::cerr<<srv_conf.srv_id<<" DONE "<<std::endl;
 
     return 0;
 }

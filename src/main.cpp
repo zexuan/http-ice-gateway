@@ -7,6 +7,8 @@
 #include "ice_resp_handler.h"
 #include "http_handler.h"
 
+#include "conf.h"
+
 using namespace NAMESPACE_GATEWAY::service;
 
 struct app_info {
@@ -30,21 +32,37 @@ void gateway_init_thread(evhtp_t* evhtp, evthr_t* thread, void* arg) {
     evthr_set_aux(thread, info);
 }
 
-// ICE服务配置
-struct ice_config_service_t ice_srv_configs[] = {
-    {true, "ice-async-service-001", "SrvPrx", "ice-async-server", "ice.admin.conf", 1000},
-    {true, "ice-async-service-002", "SrvPrx", "ice-async-server", "ice.admin.conf", 1000},
-};
-
 int main(int argc, char ** argv) {
 
-    int num_threads     = 2;
-    const char * baddr  = "127.0.0.1";
-    uint16_t bport      = 8089;
-    int backlog         = 1024;
-    int nodelay         = 0;
-    int defer_accept    = 0;
-    int reuse_port      = 0;
+    std::string cfg_file = "config.json";
+    if(argc > 1) {
+        cfg_file = argv[1];
+    }
+    Config& config = Config::instance();
+    if(!config.load(cfg_file)) {
+        std::cerr<<"config init failed "<<cfg_file<<std::endl;
+        return EXIT_FAILURE;
+    }
+
+    // 初始化ice服务
+    std::string err{"success"};
+    const std::vector<struct ice_config_service_t>& ice_srv_configs = config.getIceSrvConfigs();
+    struct ice_config_services_t srv_configs;
+    for(auto& ice_srv_conf : ice_srv_configs) {
+        srv_configs.services[ice_srv_conf.srv_id] = ice_srv_conf;
+    }
+    int res = IceAsyncHttpRespHandler::init(srv_configs, err);
+    if(res != 0) {
+        std::cerr<<res<<" "<<err<<std::endl;
+    }
+
+    int http_threads    = config.getThreads();
+    std::string baddr   = config.getHttpAddr();
+    uint16_t bport      = config.getHttpPort();
+    int backlog         = config.getHttpBacklog();
+    int nodelay         = config.getHttpNodelay();
+    int defer_accept    = config.getHttpDeferAccept();
+    int reuse_port      = config.getHttpReusePort();
 
     struct event_base* evbase = event_base_new();
     evhtp_t* evhtp = evhtp_new(evbase, NULL);
@@ -63,25 +81,17 @@ int main(int argc, char ** argv) {
         evhtp_set_cb(evhtp, p->path, p->handler, p->arg);
     }
 
-    // 初始化ice服务
-    struct ice_config_services_t srv_configs;
-    for(auto& ice_srv_conf : ice_srv_configs) {
-        std::cerr<<ice_srv_conf.srv_id<<std::endl;
-        srv_configs.services[ice_srv_conf.srv_id] = ice_srv_conf;
-    }
-    IceAsyncHttpRespHandler::init(srv_configs);
-
 #ifndef EVHTP_DISABLE_EVTHR
-    if(num_threads > 0) {
+    if(http_threads > 0) {
         struct app_info* app_p = new struct app_info;
         app_p->evbase = evbase;
         app_p->evhtp = evhtp;
-        evhtp_use_threads_wexit(evhtp, gateway_init_thread, NULL, num_threads, app_p);
+        evhtp_use_threads_wexit(evhtp, gateway_init_thread, NULL, http_threads, app_p);
     }
 #endif
-    evhtp_bind_socket(evhtp, baddr, bport, backlog);
+    evhtp_bind_socket(evhtp, baddr.c_str(), bport, backlog);
     event_base_loop(evbase, 0);
 
-    return 0;
+    return EXIT_SUCCESS;
 } /* main */
 

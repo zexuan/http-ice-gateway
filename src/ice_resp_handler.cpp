@@ -22,55 +22,50 @@ static evthr_t* get_request_thr(evhtp_request_t * request) {
 
 IceAsyncHttpRespHandler::IceAsyncHttpRespHandler(const std::string& rqstid, 
             evhtp_request_t* req,
+            std::chrono::steady_clock::time_point& tv,
             bool async)
-        : IceAsyncRqstBase(rqstid, async), req_(req) {
-}
-IceAsyncHttpRespHandler::IceAsyncHttpRespHandler(const std::string& rqstid, 
-        const std::string& srv_id,
-        const std::string& method,
-        const std::string& rqst,
-        evhtp_request_t* req,
-        bool async)
-    : IceAsyncRqstBase(rqstid, srv_id, method, rqst, async), req_(req) {
+        : IceRqstBase(rqstid, async), req_(req) {
+    TIMER_END(tv, elapse);
+    tm.Elapse(elapse);
 }
 
 IceAsyncHttpRespHandler::~IceAsyncHttpRespHandler() {
 }
 
-int IceAsyncHttpRespHandler::init(struct ice_config_services_t& srv_configs) {
-    std::string err;
+int IceAsyncHttpRespHandler::init(struct ice_config_services_t& srv_configs, std::string& err) {
     IceServices* services = IceServices::instance();
-    int res = services->init(srv_configs, err);
-    if(res < 0)
-        std::cerr<<"xxxxx "<<res<<" "<<err;
-    return res;
+    return services->init(srv_configs, err);
 }
 
 void IceAsyncHttpRespHandler::Call(const std::string& rqstid,
-                                    const std::string& srv_id,
-                                    const std::string& method,
-                                    const std::string& rqst,
-                                    const bool async,
-                                    evhtp_request_t* r) {
+                                   const std::string& srv_id,
+                                   const std::string& method,
+                                   const std::string& rqst,
+                                   const bool async,
+                                   std::chrono::steady_clock::time_point& tv,
+                                   evhtp_request_t* r) {
     // 记录请求状态
     request_hash_table.insert((void*)r, 1);
     evhtp_request_set_hook(r, evhtp_hook_on_error, (evhtp_hook)request_error_cb, NULL);
 
-    IceAsyncCallbackHandlerPtr handle = new IceAsyncHttpRespHandler(rqstid, srv_id, method, rqst, r, async);
-    handle->Start();
+    IceAsyncCallbackHandlerPtr handle = new IceAsyncHttpRespHandler(rqstid, r, tv, async);
+    handle->Start(srv_id, method, rqst);
 }
 
 bool IceAsyncHttpRespHandler::ProcessResult(bool succ, const std::string& resp) {
-    // 业务逻辑相关后续处理
-    evbuffer_add_printf(req_->buffer_out, "%*s", resp.size(), resp.data());
+
+    if(req_ && req_->buffer_out)
+        evbuffer_add_printf(req_->buffer_out, "%*s", resp.size(), resp.data());
 
     evthr_t* thread = get_request_thr(req_);
     if(thread) {
         // multi-thread
         evthr_defer(thread, IceAsyncHttpRespHandler::httpResponseCb, (void*)req_);
+        std::cerr<<"AAAA Elapse="<<tm.Elapse()<<std::endl;
     } else {
         evhtp_send_reply(req_, EVHTP_RES_OK);
         //evhtp_request_resume(req_); ab没有-k时无法返回
+        std::cerr<<"AAAA Elapse="<<tm.Elapse()<<std::endl;
     }
 }
 
@@ -89,7 +84,7 @@ bool IceAsyncHttpRespHandler::ProcessResult(evhtp_request_t* r, bool succ, const
     }
 }
 
-void IceAsyncHttpRespHandler::httpResponseCb(evthr_t* thr, void* arg, void * shared) {
+void IceAsyncHttpRespHandler::httpResponseCb(evthr_t* thr, void* arg, void* shared) {
     evhtp_request_t* r = (evhtp_request_t*)arg;
     if(r && request_hash_table.contains((void*)r)) {
         request_hash_table.erase((void*)r);
