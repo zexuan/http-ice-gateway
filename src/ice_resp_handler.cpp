@@ -61,11 +61,9 @@ bool IceAsyncHttpRespHandler::ProcessResult(bool succ, const std::string& resp) 
     if(thread) {
         // multi-thread
         evthr_defer(thread, IceAsyncHttpRespHandler::httpResponseCb, (void*)req_);
-        std::cerr<<"AAAA Elapse="<<tm.Elapse()<<std::endl;
     } else {
         evhtp_send_reply(req_, EVHTP_RES_OK);
         //evhtp_request_resume(req_); ab没有-k时无法返回
-        std::cerr<<"AAAA Elapse="<<tm.Elapse()<<std::endl;
     }
 }
 

@@ -13,7 +13,9 @@ bool Config::load(const std::string& cfg_file) {
     };
 
     // method -> srv_id
-    method2srvid_ = std::unordered_map<std::string, std::string>{{"srv_id1", "ice-async-service-002"}};
+    method2srvid_ = std::unordered_map<std::string, struct method_config_t>{
+        {"api.news.list", {"ice-async-service-002", "NewsList"}},
+    };
 
     return true;
 }

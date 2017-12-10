@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include "ice_services.h"
+#include "method_config.h"
 
 using namespace NAMESPACE_GATEWAY::service;
 
@@ -28,11 +29,13 @@ public:
     int getHttpDeferAccept() const { return http_defer_accept_; }
     int getHttpReusePort() const { return http_reuser_port_; }
 
-    std::string getSrvId(const std::string& method) const {
+    int getSrvId(const std::string& method, struct method_config_t& cfg) const {
         auto iter = method2srvid_.find(method);
-        if(iter != method2srvid_.end())
-            return iter->second;
-        return "";
+        if(iter != method2srvid_.end()) {
+            cfg = iter->second;
+            return 0;
+        }
+        return -1;
     }
     const struct std::vector<ice_config_service_t>& getIceSrvConfigs() const {
         return ice_srv_configs_;
@@ -51,7 +54,7 @@ private:
     int http_defer_accept_{0};
     int http_reuser_port_{0};
 
-    std::unordered_map<std::string, std::string> method2srvid_;
+    std::unordered_map<std::string, struct method_config_t> method2srvid_;
 
     std::vector<struct ice_config_service_t> ice_srv_configs_;
 

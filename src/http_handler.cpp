@@ -48,15 +48,20 @@ void router_request_handler(evhtp_request_t* r, void* arg) {
 
     // method -> srv_id
     const Config& config = Config::instance();
-    const std::string srv_id = config.getSrvId(method);
-    if(srv_id.empty()) {
-        evbuffer_add_printf(r->buffer_out, "invalid method: %s", method.data());
+
+    struct method_config_t method_cfg;
+    int res = config.getSrvId(method, method_cfg);
+    if(res != 0 || method_cfg.srv_id.empty()) {
+        evbuffer_add_printf(r->buffer_out, "%s", err_method_resp);
         evhtp_send_reply(r, EVHTP_RES_BADREQ);
         return;
     }
+    if(method_cfg.srv_method.empty()) {
+        method_cfg.srv_method = method;
+    }
 
     bool async = true;
-    IceAsyncHttpRespHandler::Call(rqstid, srv_id, method, rqst, async, tv_start, r);
+    IceAsyncHttpRespHandler::Call(rqstid, method_cfg.srv_id, method_cfg.srv_method, rqst, async, tv_start, r);
 }
 
 void ping_request_handler(evhtp_request_t* r, void* arg) {
