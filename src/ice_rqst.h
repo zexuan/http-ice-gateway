@@ -1,0 +1,69 @@
+
+#pragma once
+
+#include <string>
+#include <functional>
+
+#include <ice_interface.h>
+
+#include "namespace_def.h"
+
+using namespace NAMESPACE_GATEWAY::idl;
+
+NAMESPACE_GATEWAY_BEGIN
+
+namespace rqst {
+
+class IceAsyncRqstBase : public IceUtil::Shared {
+public:
+    IceAsyncRqstBase(const std::string& rqstid, bool async=true);
+    IceAsyncRqstBase(const std::string& rqstid, const AMD_Srv_CallPtr& cb, bool async=true);
+    IceAsyncRqstBase(const std::string& rqstid, const std::string& srv_id, const std::string& method, const std::string& rqst, bool async=true);
+    IceAsyncRqstBase(const std::string& rqstid, const std::string& srv_id, const std::string& method, const std::string& rqst, const AMD_Srv_CallPtr& cb, bool async=true);
+    virtual ~IceAsyncRqstBase();
+
+    const std::string& RqstId() { return rqstid_; }
+    const std::string& SrvId() { return srv_id_; }
+    const std::string& Method() { return method_; }
+    const std::string& Rqst() { return rqst_; }
+
+    const std::string& Error() { return err_; }
+    void Error(const std::string& err) { err_ = err; }
+
+    bool Start();
+    bool Start(const std::string& srv_id, const std::string& method, const std::string& rqst);
+
+    bool IceResponse(bool succ, const std::string& resp);
+    static bool IceResponse(const std::string& rqstid, const std::string& srv_id, const std::string& method, const std::string& rqst, bool succ, const std::string& resp, double elapse, AMD_Srv_CallPtr& callback);
+
+    // 可以继承的2个函数
+    virtual bool Request();
+    virtual bool ProcessResult(bool succ, const std::string& resp);
+
+    void response(bool succ, const std::string& resp);
+    void exception(const Ice::Exception& ex);
+
+    //bool asyncPing(const std::string& srv_id, const std::string& rqst);
+
+protected:
+    bool asyncCall();
+    bool asyncCall(const std::string& rqstid, const std::string& srv_id, const std::string& method, const std::string& rqst);
+    bool syncCall();
+    bool syncCall(const std::string& rqstid, const std::string& srv_id, const std::string& method, const std::string& rqst);
+
+
+protected:
+    bool is_async_{true};
+
+    std::string rqstid_;
+    std::string srv_id_;
+    std::string method_;
+    std::string rqst_;
+    std::string err_;
+    AMD_Srv_CallPtr callback_;
+};
+typedef IceUtil::Handle<IceAsyncRqstBase> IceAsyncCallbackHandlerPtr;
+
+}
+
+NAMESPACE_GATEWAY_END
